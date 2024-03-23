@@ -1,6 +1,6 @@
 ###  Guía General
 
-```markdown
+
 # Configuración de VPN Site-to-Site con IPSec en Router Cisco ISR (IOS 15.x)
 
 La configuración de una VPN site-to-site en un router Cisco con IOS 15.x implica varios pasos principales, incluyendo la configuración de los parámetros de criptografía para IKE Phase 1 y Phase 2, definición del tráfico interesado, y aplicación de la política de criptografía al tráfico.
