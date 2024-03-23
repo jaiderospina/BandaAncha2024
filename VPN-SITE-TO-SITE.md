@@ -86,4 +86,3 @@ interface GigabitEthernet0/0
 ```
 
 Con estos pasos, se establecerá una VPN site-to-site segura entre dos sitios utilizando IPSec en routers Cisco con IOS 15.x. Recuerda reemplazar los valores de ejemplo por los específicos de tu red.
-```
