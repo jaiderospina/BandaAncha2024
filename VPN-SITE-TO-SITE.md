@@ -1,69 +1,89 @@
-Para configurar una VPN site-to-site utilizando IPSec en routers Cisco, el proceso puede variar ligeramente dependiendo del modelo específico del router y de la versión de IOS que esté utilizando. A continuación, te proporcionaré una guía general que aplica a muchos modelos y versiones de IOS, enfocándome en routers de la serie Cisco ISR (Integrated Services Routers) con IOS 15.x, que son comunes y soportan una amplia gama de funcionalidades de red, incluyendo VPNs IPSec.
+###  Guía General
 
-Paso 1: Definición de los Parámetros de Criptografía
-Definir una Política de ISAKMP (IKE Phase 1):
+```markdown
+# Configuración de VPN Site-to-Site con IPSec en Router Cisco ISR (IOS 15.x)
 
-plaintext
-Copy code
+La configuración de una VPN site-to-site en un router Cisco con IOS 15.x implica varios pasos principales, incluyendo la configuración de los parámetros de criptografía para IKE Phase 1 y Phase 2, definición del tráfico interesado, y aplicación de la política de criptografía al tráfico.
+
+## Paso 1: Definición de los Parámetros de Criptografía
+
+### Configuración de IKE Phase 1
+
+Primero, define los parámetros para la fase 1 del Intercambio de Claves de Internet (IKE), que establece el canal seguro para negociar la fase 2 de IPSec.
+
+```plaintext
 crypto isakmp policy 10
  encryption aes 256
  hash sha256
  authentication pre-share
  group 5
  lifetime 86400
-Aquí, 10 es el número de prioridad de la política (menor es más prioritario). Se configura AES 256-bits para encriptación, SHA-256 para hash, autenticación mediante llave precompartida, y un grupo Diffie-Hellman de 5. El tiempo de vida es 86400 segundos (24 horas).
+```
 
-Definir una Llave Precompartida de ISAKMP (IKE Phase 1):
+- **encryption aes 256**: Usa AES con una clave de 256 bits para encriptación.
+- **hash sha256**: Utiliza SHA-256 para hashing.
+- **authentication pre-share**: Autenticación mediante llave precompartida.
+- **group 5**: Usa el grupo Diffie-Hellman 5 para el intercambio de claves.
+- **lifetime 86400**: Establece el tiempo de vida de la asociación de seguridad a 24 horas.
 
-plaintext
-Copy code
-crypto isakmp key 6 [llave] address [IP_remoto]
-Donde [llave] es la contraseña compartida y [IP_remoto] es la dirección IP del router remoto.
+### Definición de Llave Precompartida de ISAKMP
 
-Paso 2: Configuración de IPSec (IKE Phase 2)
-Definir una Transformación de IPSec:
+Asigna una llave precompartida que se usará para autenticar el túnel con el sitio remoto.
 
-plaintext
-Copy code
+```plaintext
+crypto isakmp key MYKEY address 192.168.1.2
+```
+
+- **MYKEY**: Llave precompartida para la autenticación.
+- **address 192.168.1.2**: Dirección IP del router remoto.
+
+## Paso 2: Configuración de IPSec (IKE Phase 2)
+
+### Configuración del Conjunto de Transformación de IPSec
+
+Define los parámetros para la fase 2, que protege el tráfico de datos entre los sitios.
+
+```plaintext
 crypto ipsec transform-set MYSET esp-aes 256 esp-sha-hmac 
-MYSET es un nombre arbitrario para el conjunto de transformación, que utiliza AES 256-bits y HMAC-SHA para ESP.
+```
 
-Crear una Política de IPSec:
+- **MYSET**: Nombre del conjunto de transformación.
+- **esp-aes 256**: Encriptación AES 256 bits.
+- **esp-sha-hmac**: HMAC SHA para integridad.
 
-plaintext
-Copy code
-crypto ipsec profile MYPROFILE
- set transform-set MYSET
-Asigna el conjunto de transformación MYSET al perfil de IPSec MYPROFILE.
+### Creación de la Política de IPSec
 
-Paso 3: Configuración de VPN
-Definir una ACL para el Tráfico de Interés:
+Asocia el conjunto de transformación a una política de IPSec.
 
-plaintext
-Copy code
-access-list 101 permit ip [LAN_local] [Wildcard_LAN_local] [LAN_remota] [Wildcard_LAN_remota]
-Esta ACL define qué tráfico será encriptado, donde [LAN_local] y [LAN_remota] son las redes locales y remotas, respectivamente.
-
-Configurar el Crypto Map:
-
-plaintext
-Copy code
+```plaintext
 crypto map MYMAP 10 ipsec-isakmp
- set peer [IP_remoto]
+ set peer 192.168.1.2
  set transform-set MYSET
- set pfs group5
  match address 101
-MYMAP es el nombre del crypto map, que asocia la ACL 101, el conjunto de transformación, y la autenticación PFS con el grupo Diffie-Hellman especificado.
+```
 
-Aplicar el Crypto Map a la Interfaz:
+- **set peer 192.168.1.2**: Especifica la dirección IP del peer remoto.
+- **set transform-set MYSET**: Usa el conjunto de transformación `MYSET`.
+- **match address 101**: Asocia la ACL 101 para definir el tráfico interesado.
 
-plaintext
-Copy code
-interface [Interfaz_Externa]
+## Paso 3: Configuración de VPN
+
+### Definición de la ACL para el Tráfico Interesado
+
+Crea una Access Control List (ACL) para identificar el tráfico que pasará por la VPN.
+
+```plaintext
+access-list 101 permit ip 10.1.1.0 0.0.0.255 10.2.2.0 0.0.0.255
+```
+
+### Aplicación del Crypto Map a la Interfaz Externa
+
+Aplica la política de IPSec a la interfaz que conecta con el sitio remoto.
+
+```plaintext
+interface GigabitEthernet0/0
  crypto map MYMAP
-Donde [Interfaz_Externa] es la interfaz que se conecta a Internet o a la red externa.
+```
 
-Consideraciones Adicionales
-Modelo y IOS: Asegúrate de que el router soporte las funciones necesarias para IPSec. Los modelos ISR con IOS 15.x generalmente lo hacen, pero verifica la documentación específica de tu modelo para detalles precisos.
-Seguridad y Rendimiento: Ajusta los parámetros de criptografía según tus requisitos específicos de seguridad y rendimiento.
-Compatibilidad: Asegúrate de que la configuración sea compatible con el dispositivo en el otro extremo de la VPN.
+Con estos pasos, se establecerá una VPN site-to-site segura entre dos sitios utilizando IPSec en routers Cisco con IOS 15.x. Recuerda reemplazar los valores de ejemplo por los específicos de tu red.
+```
